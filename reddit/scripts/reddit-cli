@@ -1,0 +1,213 @@
+#!/usr/bin/env python3
+"""CLI tool for reading Reddit via OAuth API. Supports browsing, searching, and reading posts/comments."""
+
+import json
+import sys
+import time
+import urllib.request
+import urllib.parse
+import base64
+import os
+
+
+def load_credentials():
+    client_id = os.environ.get("REDDIT_CLIENT_ID")
+    client_secret = os.environ.get("REDDIT_CLIENT_SECRET")
+    if not client_id or not client_secret:
+        print("Error: REDDIT_CLIENT_ID and REDDIT_CLIENT_SECRET environment variables required.", file=sys.stderr)
+        sys.exit(1)
+    return {
+        "client_id": client_id,
+        "client_secret": client_secret,
+        "user_agent": os.environ.get("REDDIT_USER_AGENT",
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/134.0.0.0 Safari/537.36"),
+    }
+
+
+TOKEN_CACHE = {}
+
+
+def get_token():
+    if TOKEN_CACHE.get("expires_at", 0) > time.time() + 60:
+        return TOKEN_CACHE["access_token"]
+
+    creds = load_credentials()
+    auth = base64.b64encode(f"{creds['client_id']}:{creds['client_secret']}".encode()).decode()
+    req = urllib.request.Request(
+        "https://www.reddit.com/api/v1/access_token",
+        data=b"grant_type=client_credentials",
+        headers={
+            "Authorization": f"Basic {auth}",
+            "User-Agent": creds["user_agent"],
+        },
+        method="POST",
+    )
+    resp = urllib.request.urlopen(req, timeout=15)
+    data = json.loads(resp.read())
+    TOKEN_CACHE.update(data)
+    TOKEN_CACHE["expires_at"] = time.time() + data.get("expires_in", 3600)
+    return data["access_token"]
+
+
+def api_get(endpoint, params=None):
+    token = get_token()
+    creds = load_credentials()
+    url = f"https://oauth.reddit.com{endpoint}"
+    if params:
+        url += "?" + urllib.parse.urlencode(params)
+    req = urllib.request.Request(url, headers={
+        "Authorization": f"Bearer {token}",
+        "User-Agent": creds["user_agent"],
+    })
+    resp = urllib.request.urlopen(req, timeout=15)
+    return json.loads(resp.read())
+
+
+def fmt_post(p, idx=None):
+    prefix = f"{idx}. " if idx else ""
+    lines = [
+        f"{prefix}[{p['score']} pts] {p['title']}",
+        f"   by u/{p['author']} | {p['num_comments']} comments | r/{p['subreddit']}",
+        f"   https://reddit.com{p['permalink']}",
+    ]
+    if p.get("selftext"):
+        text = p["selftext"][:500]
+        if len(p["selftext"]) > 500:
+            text += "..."
+        lines.append(f"   ---\n   {text}")
+    if p.get("url") and not p["url"].startswith("https://www.reddit.com"):
+        lines.append(f"   Link: {p['url']}")
+    return "\n".join(lines)
+
+
+def fmt_comment(c, indent=0):
+    prefix = "  " * indent
+    body = c.get("body", "").replace("\n", "\n" + prefix + "   ")
+    return f"{prefix}[{c.get('score', '?')} pts] u/{c.get('author', '[deleted]')}:\n{prefix}   {body}"
+
+
+def cmd_hot(args):
+    sub = args[0] if args else "programming"
+    limit = int(args[1]) if len(args) > 1 else 10
+    data = api_get(f"/r/{sub}/hot", {"limit": limit})
+    for i, child in enumerate(data["data"]["children"], 1):
+        print(fmt_post(child["data"], i))
+        print()
+
+
+def cmd_top(args):
+    sub = args[0] if args else "programming"
+    t = args[1] if len(args) > 1 else "week"
+    limit = int(args[2]) if len(args) > 2 else 10
+    data = api_get(f"/r/{sub}/top", {"t": t, "limit": limit})
+    for i, child in enumerate(data["data"]["children"], 1):
+        print(fmt_post(child["data"], i))
+        print()
+
+
+def cmd_new(args):
+    sub = args[0] if args else "programming"
+    limit = int(args[1]) if len(args) > 1 else 10
+    data = api_get(f"/r/{sub}/new", {"limit": limit})
+    for i, child in enumerate(data["data"]["children"], 1):
+        print(fmt_post(child["data"], i))
+        print()
+
+
+def cmd_post(args):
+    url_or_id = args[0]
+    comment_limit = int(args[1]) if len(args) > 1 else 20
+
+    if "reddit.com" in url_or_id:
+        path = url_or_id.split("reddit.com")[1].rstrip("/")
+    elif url_or_id.startswith("/r/"):
+        path = url_or_id.rstrip("/")
+    else:
+        print("Error: provide a Reddit URL or path like /r/sub/comments/id/title", file=sys.stderr)
+        sys.exit(1)
+
+    data = api_get(path, {"limit": comment_limit, "sort": "top"})
+
+    post_data = data[0]["data"]["children"][0]["data"]
+    print("=" * 70)
+    print(fmt_post(post_data))
+    print("=" * 70)
+    print()
+
+    if len(data) > 1:
+        print(f"--- Top Comments ({comment_limit} max) ---\n")
+        def print_comments(children, indent=0):
+            for child in children:
+                if child["kind"] != "t1":
+                    continue
+                c = child["data"]
+                print(fmt_comment(c, indent))
+                print()
+                replies = c.get("replies")
+                if isinstance(replies, dict):
+                    print_comments(replies.get("data", {}).get("children", []), indent + 1)
+        print_comments(data[1]["data"]["children"])
+
+
+def cmd_search(args):
+    query = args[0] if args else ""
+    sub = args[1] if len(args) > 1 else "all"
+    limit = int(args[2]) if len(args) > 2 else 10
+    data = api_get(f"/r/{sub}/search", {"q": query, "limit": limit, "sort": "relevance", "t": "all"})
+    for i, child in enumerate(data["data"]["children"], 1):
+        print(fmt_post(child["data"], i))
+        print()
+
+
+def cmd_user(args):
+    username = args[0] if args else ""
+    limit = int(args[1]) if len(args) > 1 else 10
+    data = api_get(f"/user/{username}/submitted", {"limit": limit, "sort": "top"})
+    for i, child in enumerate(data["data"]["children"], 1):
+        print(fmt_post(child["data"], i))
+        print()
+
+
+USAGE = """Usage: reddit-cli <command> [args...]
+
+Commands:
+  hot    <subreddit> [limit]              Hot posts (default: programming, 10)
+  top    <subreddit> [time] [limit]       Top posts (time: hour/day/week/month/year/all)
+  new    <subreddit> [limit]              New posts
+  post   <url> [comment_limit]            Read a specific post + comments
+  search <query> [subreddit] [limit]      Search posts
+  user   <username> [limit]               User's posts
+
+Environment variables:
+  REDDIT_CLIENT_ID      Reddit OAuth client ID (required)
+  REDDIT_CLIENT_SECRET  Reddit OAuth client secret (required)
+  REDDIT_USER_AGENT     Custom User-Agent string (optional)
+
+Examples:
+  reddit-cli hot programming 5
+  reddit-cli top python week 10
+  reddit-cli post https://reddit.com/r/programming/comments/xxx/title
+  reddit-cli search "async rust" programming 5
+  reddit-cli user spez 5
+"""
+
+
+def main():
+    if len(sys.argv) < 2 or sys.argv[1] in ("-h", "--help", "help"):
+        print(USAGE)
+        sys.exit(0)
+
+    cmd = sys.argv[1]
+    args = sys.argv[2:]
+    commands = {"hot": cmd_hot, "top": cmd_top, "new": cmd_new, "post": cmd_post, "search": cmd_search, "user": cmd_user}
+
+    if cmd not in commands:
+        print(f"Unknown command: {cmd}\n", file=sys.stderr)
+        print(USAGE, file=sys.stderr)
+        sys.exit(1)
+
+    commands[cmd](args)
+
+
+if __name__ == "__main__":
+    main()
