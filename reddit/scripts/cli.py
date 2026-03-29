@@ -1,4 +1,3 @@
-#!/usr/bin/env python3
 """CLI tool for reading Reddit via OAuth API. Supports browsing, searching, and reading posts/comments."""
 
 import json
@@ -168,7 +167,7 @@ def cmd_user(args):
         print()
 
 
-USAGE = """Usage: reddit-cli <command> [args...]
+USAGE = """Usage: cli.py <command> [args...]
 
 Commands:
   hot    <subreddit> [limit]              Hot posts (default: programming, 10)
@@ -184,11 +183,11 @@ Environment variables:
   REDDIT_USER_AGENT     Custom User-Agent string (optional)
 
 Examples:
-  reddit-cli hot programming 5
-  reddit-cli top python week 10
-  reddit-cli post https://reddit.com/r/programming/comments/xxx/title
-  reddit-cli search "async rust" programming 5
-  reddit-cli user spez 5
+  cli.py hot programming 5
+  cli.py top python week 10
+  cli.py post https://reddit.com/r/programming/comments/xxx/title
+  cli.py search "async rust" programming 5
+  cli.py user spez 5
 """
 
 
