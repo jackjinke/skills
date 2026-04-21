@@ -71,22 +71,41 @@ These platforms are NOT reliable sources for verified financial data. However, t
 
 ### Parallel Agent Strategy
 
-For comprehensive analysis, dispatch multiple agents to research different sections concurrently. Each agent MUST follow the same citation and format standards as the final report.
+For comprehensive analysis, dispatch multiple subagents to research different domains concurrently. **Each subagent MUST be scoped to a single, specific domain and perform deep vertical analysis within that domain only.**
 
-**Agent division example:**
-- Agent A: Company Overview + Financial Analysis (Sections 1.1, 1.2, 1.4, 2)
-- Agent B: **Leadership & Key People Deep-Dive** (Section 1.3) — Research CEO, founder(s), C-suite, and other key figures (chief scientist, lead product architect, influential board members, key investor representatives). For each: background, track record, leadership style, public reputation, controversies. Compare stated vision against actual execution history.
-- Agent C: Competitive Position + Recent Developments (Sections 3.1, 3.2)
-- Agent D: Industry & Market Context (Section 4)
-- Agent E: Future Outlook (Section 5)
-- Agent F: Community Sentiment — Reddit, Xiaohongshu (Section 3.4)
-- Agent G: **Risk & Negative Information Deep-Dive** (Sections 3.3, 5.3) — Dedicated agent that searches exclusively for litigation, short seller reports, regulatory actions, governance red flags, investigative journalism, and failed initiatives. This agent's sole purpose is adversarial research to surface problems and risks.
+**⚠️ CRITICAL INSTRUCTIONS FOR SUBAGENT DISPATCH:**
+
+When dispatching each subagent, you MUST include the following in its context/prompt:
+
+1. **Explicit domain scope**: State clearly which specific domain the subagent is responsible for. Example: "You are the Financial Analysis specialist. Your ONLY responsibility is to analyze the company's financials."
+2. **Prohibition on skill re-invocation**: Explicitly instruct: "You MUST NOT run or invoke the Company Analysis skill again. Do NOT attempt to produce the full company analysis report. Focus ONLY on your assigned domain."
+3. **Prohibition on cross-domain work**: Explicitly instruct: "You MUST NOT research or write about other domains (e.g., if you are the Financial Analysis agent, do not research leadership, competitive position, or industry context). Stay strictly within your assigned scope."
+4. **Tool usage mandate**: Explicitly instruct: "You MUST actively use available tools (web search, web page reading, Reddit, Xiaohongshu, or any other tools available in your environment) to conduct DEEP research within your domain. Surface-level summaries are unacceptable — dig into specific numbers, events, patterns, and evidence."
+5. **Deep analysis expectation**: Explicitly instruct: "Your analysis should be VERTICAL and DEEP, not broad and shallow. For example, the Financial Analysis agent should pull actual financial figures, calculate ratios, compare against peers, and identify trends — not just provide a generic overview."
+
+**How to divide agents (dynamic, not hard-coded):**
+
+Rather than prescribing fixed agent roles, determine the optimal division based on:
+- **Company type**: Public vs. private, size, stage (startup vs. mature)
+- **Data availability**: Which domains have sufficient sources for deep analysis
+- **User focus**: If the user hinted at specific concerns (e.g., "Is the CEO trustworthy?"), allocate a dedicated agent for that area
+
+Use the report sections (Sections 1–5) as natural boundaries, but feel free to merge or split based on depth requirements. Common patterns include:
+- One agent per major section (Company Overview, Financials, Competitive Position, Industry Context, Future Outlook)
+- A dedicated adversarial agent for risk & negative information (mandatory — this must always have its own agent)
+- A dedicated agent for community sentiment if the company has significant public presence
+- Sub-dividing large sections (e.g., separating leadership analysis from financial analysis if both warrant deep treatment)
+
+**⚠️ NEVER assign an agent to produce the entire report or to cover multiple unrelated domains superficially.**
 
 **Sub-report requirements (mandatory for each agent):**
-1. Each agent saves its sub-report into the output directory created in Step 0: `{company-name}/{company-name}-section-{section-number}-{YYYY-MM-DD}.md`
+1. Each agent saves its sub-report into the output directory created in Step 0, using a filename that reflects its research domain: `{company-name}/{company-name}-section-{domain-name}-{YYYY-MM-DD}.md`
+   - `{domain-name}` should be a clear, lowercase, hyphenated description of the domain (e.g., `financial-analysis`, `leadership-key-people`, `competitive-position`, `industry-market-context`, `future-outlook`, `community-sentiment`, `risk-negative-info`).
+   - Choose a `{domain-name}` that accurately describes what this subagent researched — do NOT use generic numbers like `section-1`, `section-2`.
 2. Every factual claim in the sub-report must include an inline citation with a clickable link — this is non-negotiable even for sub-reports
 3. Each sub-report must end with its own Sources section listing all referenced URLs
 4. When dispatching agents, pass the absolute path of the output directory so each agent knows where to write
+5. Each sub-report should demonstrate DEPTH in its domain — include specific numbers, named individuals, dated events, and detailed evidence
 
 **Final synthesis:**
 After all agents complete, merge sub-reports into the final report. During merging:
