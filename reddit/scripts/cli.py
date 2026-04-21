@@ -7,6 +7,21 @@ import urllib.request
 import urllib.parse
 import base64
 import os
+from pathlib import Path
+
+
+def _load_dotenv():
+    env_file = Path(__file__).resolve().parent / ".env"
+    if env_file.is_file():
+        for line in env_file.read_text().splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            os.environ.setdefault(k.strip(), v.strip())
+
+
+_load_dotenv()
 
 
 def load_credentials():
