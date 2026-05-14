@@ -167,6 +167,19 @@ Generate the final report with the following sections.
 - **Influential board members & investor representatives**: Board composition, independence, notable directors, activist investors with board seats
 - **Recent departures**: Key people who left recently — why, and what impact has it had?
 
+#### External Commitments & Time Allocation
+<!-- Analyze whether key leaders hold positions at other companies, and assess how much focus they can realistically devote to THIS company. -->
+- **Cross-holdings & external roles**: Do the CEO, founders, or key executives hold board seats, advisory roles, executive positions, or significant ownership stakes at other companies? List each company and the specific role(s) held.
+- **Related-party transactions & conflicts of interest**: Are there business dealings between this company and other entities where leadership holds interests? Any historical pattern of channeling resources or attention toward external ventures at the core company's expense?
+- **Estimated focus / effort allocation**: Based on external signals, provide a qualitative assessment of how much professional energy leadership devotes to this company versus elsewhere. Signals to evaluate include:
+  - **Public visibility**: Frequency of earnings call participation, investor day attendance, and media appearances on behalf of this company vs. other entities
+  - **Operational involvement**: Reporting lines, stated day-to-day responsibilities, and internal communications cited in press or filings
+  - **External activity load**: Board meetings, capital-raising events, product launches, or public advocacy for other ventures
+  - **Historical patterns**: Changes in engagement level over time (e.g., gradual disengagement after a secondary venture gains traction)
+  - Categorize the estimated focus as one of: **Fully dedicated** | **Primarily focused** | **Split attention** | **Marginally engaged**
+- **Evidence & methodology**: Explicitly state which signals were used and their sources (e.g., "CEO X missed 2 of 4 quarterly earnings calls in 2024 while serving as active chair of Company Y"; "Founder Z’s social media activity in Q1–Q3 was 80% about their AI startup and 20% about this company per post analysis"). Distinguish hard facts (disclosed positions, verified filings) from reasonable inferences.
+- **Implications for governance & execution**: Does divided attention appear to affect strategic decisions, operational oversight, crisis response speed, or capital allocation? Have shareholders, analysts, or board members publicly raised concerns? Cite specific instances.
+
 #### Leadership Assessment
 - **Public reputation & perception**: How is leadership viewed by employees (Glassdoor/Blind), investors (analyst commentary), media, and the industry? Any personal controversies, legal issues, or ethical concerns?
 - **Team cohesion & stability**: Is the leadership team stable, or has there been significant turnover? Do public signals suggest alignment or internal friction?
