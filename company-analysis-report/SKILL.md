@@ -1,5 +1,5 @@
 ---
-name: company-analysis
+name: company-analysis-report
 description: Use when the user asks to analyze a company, research a business, evaluate a stock, or understand a company's fundamentals, financials, industry position, or growth prospects. Triggers on requests like "analyze [company]", "research [company]", "tell me about [company]'s business".
 user-invocable: true
 ---
