@@ -1,6 +1,6 @@
 ---
 name: tern
-description: "Control Tern, a multiplexing terminal and session daemon for coding agents. Use when the user mentions Tern or asks to inspect or control blocks, tabs, sessions, commands, other coding agents, or remote hosts in Tern."
+description: "Control Tern terminal sessions, tabs, blocks, peer coding agents, and remote hosts. Use when the user mentions Tern or asks to inspect or orchestrate terminal blocks, tabs, sessions, other agents, or remote hosts in Tern."
 ---
 
 # Tern
@@ -10,16 +10,16 @@ Tern organizes terminals and native views into **Window (`--window KEY`) → Ses
 ## 1. Context & Addressing
 
 Managed blocks inherit:
-- `TERN_PANE`: Numeric ID of the calling block (use `"$TERN_PANE"` for self; never use `@focused` for self).
+- `TERN_PANE`: Numeric ID of the calling block (use `"$TERN_PANE"` for self; `@focused` tracks whichever block the user is viewing).
 - `TERN_PANE_SOCKET` / `TERN_DAEMON_SOCKET`: Daemon Unix socket path.
 - `TERN_WINDOW_KEY`: Window key (`""` for first window, `"2"`, etc.).
 - `TERN_IDENTITY`: Client auth hop chain JSON (`tern whoami --json`).
 
-Outside a Tern block (e.g. over SSH), `tern` commands still work against the host's running daemon, but `TERN_PANE` is unset—pass explicit selectors. **Never run bare `tern`** (it opens a new GUI window/tab).
+Outside a Tern block (e.g. over SSH), `tern` commands still work against the host's running daemon (`TERN_PANE` is unset—pass explicit selectors). Always invoke `tern` with a subcommand (bare `tern` opens a new GUI window/tab).
 
 - **Window resolution**: `--window KEY` > window holding `$TERN_PANE` > `$TERN_WINDOW_KEY` > first window (`""`).
 - **`SESSION` selector**: Numeric `id` or exact `name` (e.g. `Default`). Unattached sessions appear in `.detached`.
-- **`BLOCK` selector**: Numeric ID (always prefer in scripts), `@focused` (active block in shown tab), title/program substring, or `SESSION/BLOCK`. **Never pass `""` as `BLOCK`** (matches all blocks and errors).
+- **`BLOCK` selector**: Pass a non-empty numeric ID in scripts (`""` matches every block title and errors); also accepts `@focused`, title/program substring, or `SESSION/BLOCK`.
 
 ## 2. CLI Reference
 
@@ -67,10 +67,10 @@ All commands accept `[--json] [--window KEY]`.
 ## 3. Workflows
 
 ### A. Running Commands & Lightweight Layout
-Treat layout as a quick rule of thumb—decide in one step and focus on the task rather than spending turns organizing blocks:
-- Avoid stacking >2 blocks along a single axis (horizontally or vertically). For lead + subagents, keep the lead on the left and stack subagents vertically on the right; for peer agents, use a 2x2 (up to 3x3) grid, or spill to `tern new tab`.
-- Closely collaborating blocks in different tabs can be grouped together when space allows (`tern move BLOCK right-of|below TARGET` or `tern move BLOCK tab N`), or broken out when crowded (`tern move BLOCK new-tab`).
-- If the user manually moves, floats, or reorganizes blocks, respect their layout and keep addressing blocks by numeric ID where they are—never move them back.
+Decide layout in one step from `tern ls --json` and proceed directly to the task:
+- Cap any single row or column at 2 blocks: for a lead agent + subagents, keep the lead on the left and stack subagents vertically on the right; for peer agents, form a 2x2 (up to 3x3) grid, and open a new tab (`tern new tab`) beyond that.
+- Co-locate closely collaborating blocks into the same tab when space allows (`tern move BLOCK right-of|below TARGET` or `tern move BLOCK tab N`), or break a block out with `tern move BLOCK new-tab`.
+- Preserve manual user layout changes: when the user moves, floats, or reorganizes blocks, continue addressing them in place by numeric ID.
 
 ```bash
 # Reusable interactive shell (wait for initial prompt before running!)
@@ -133,5 +133,5 @@ tern capture "$B" --surfaces --scrollback
 3. **Remote host diagnostics & management**: `tern remote hosts` (`~/.config/tern/hosts`), `tern remote discover`, `tern remote doctor [user@]HOST`, `tern remote doctor --host [--mode system|user]`, `tern remote host-key [--user]`. Only run mutating setup commands (`tern remote setup|install|update|trust`) when explicitly asked.
 
 ## 4. Safety Rules
-- Never close or kill blocks, tabs, or sessions you did not create unless asked.
-- Never stop `tern-remote.service` or kill `tern daemon` from inside an active session.
+- Only close or kill blocks, tabs, and sessions that you created for the current task, unless the user explicitly asks.
+- Keep `tern-remote.service` and `tern daemon` running at all times.
