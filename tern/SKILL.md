@@ -1,6 +1,6 @@
 ---
 name: tern
-description: "Control Tern terminal sessions, tabs, blocks, peer coding agents, and remote hosts. Use when the user mentions Tern or asks to inspect or orchestrate terminal blocks, tabs, sessions, other agents, or remote hosts in Tern."
+description: "Control Tern terminal sessions, tabs, blocks, remote hosts, and cross-block headed peer agents (IRC channels). Use when the user mentions Tern, manages terminal layouts/blocks/remote hosts, or coordinates independent headed agent sessions across blocks."
 ---
 
 # Tern
@@ -14,6 +14,8 @@ Managed blocks inherit:
 - `TERN_PANE_SOCKET` / `TERN_DAEMON_SOCKET`: Daemon Unix socket path.
 - `TERN_WINDOW_KEY`: Window key (`""` for first window, `"2"`, etc.).
 - `TERN_IDENTITY`: Client auth hop chain JSON (`tern whoami --json`).
+
+> **Terminology (`Block` vs `pane`)**: User-facing concepts, CLI selectors, and `tern ls --json` use **Block**. Underlying env vars (`$TERN_PANE`, `$TERN_PANE_SOCKET`), `tern inspect --json` (`.panes[]`, `.pane`), `tern process --json` (`.pane`), and `tern events` (`pane_*`) retain the literal `pane` field name.
 
 Outside a Tern block (e.g. over SSH), `tern` commands still work against the host's running daemon (`TERN_PANE` is unset—pass explicit selectors). Always invoke `tern` with a subcommand (bare `tern` opens a new GUI window/tab).
 
@@ -98,22 +100,21 @@ tern run "$B" "npm run dev"
 tern focus "$TERN_PANE"
 ```
 
-### C. Coordinate Coding Agents
-- **Default agent**: Unless the user specifies which agent CLI to spawn, launch the same agent currently running in `"$TERN_PANE"` (check `tern process "$TERN_PANE" --json` → `.foreground.name` if needed).
-- Agents can run inside a shell block or as native ACP chat blocks via `tern acp <agent> [--model M] [--mode MODE] [--prompt TEXT] [--resume ID|--fork ID|--continue] [--add-dir DIR]`.
-- Check peer status via `tern inspect --json` (`.panes[] | {pane, title, working, quiet_ms}`) and `tern process BLOCK --json` (`.foreground.name`).
-- **Inter-agent message prefix**: Always prefix messages sent to another agent with `[Agent from Tern Block $TERN_PANE]` (or `[Agent from $HOSTNAME Tern Block $TERN_PANE]` across hosts) so the peer distinguishes agent messages from user input and knows which block ID to reply to.
+### C. Coordinate Headed Peer Agents
+Tern peer agents are full, independent **headed** sessions—heavier than an agent's built-in subagents. Use built-in subagents for ordinary single-session delegation; reach for Tern peer blocks when you need deep workspace/worktree or cross-repo isolation, human visibility and direct interaction with the peer, or ad-hoc coordination between already-running blocks.
+
+- **Default agent**: Unless specified, launch the same agent CLI running in `"$TERN_PANE"` (`tern process "$TERN_PANE" --json` → `.foreground.name`), or a native ACP block (`tern acp <agent> [--model M] [--mode MODE] [--prompt TEXT] [--resume ID|--fork ID|--continue] [--add-dir DIR]`).
+- **Read-only inspection**: Check peer liveness with `tern inspect --json` (`.panes[] | {pane, title, working, quiet_ms, exited}`) and `tern capture "$B" --surfaces`—prefer read-only observation over sending status pings into a busy block.
+- **Cross-block collaboration (2+ headed blocks)**: Read [`IRC.md`](IRC.md) and use `scripts/irc.py` for channel `join`/`claim`/`say`/`inbox`/`part`, TTL file reservations, Dialog Guard, and 0-token deferred doorbells. Do not paste repeated follow-ups into a busy peer or close a peer's block when it leaves a channel.
 
 ```bash
+# Launch a headed peer block beside self (without stealing focus)
 SELF_AGENT=$(tern process "$TERN_PANE" --json | jq -r '.foreground.name')
 B=$(tern split "$TERN_PANE" right --cwd "$PWD" --json | jq -r '.block')
 tern wait "$B" --until prompt --timeout 10
 tern run "$B" "$SELF_AGENT"
 tern wait "$B" --until idle=1500 --timeout 30
-tern send "$B" paste "[Agent from Tern Block $TERN_PANE] Review uncommitted changes and report regressions."
-tern send "$B" keys enter
-# Poll `.panes[] | select(.pane == '$B') | .working` until false, then read output:
-tern capture "$B" --surfaces --scrollback
+# For ongoing collaboration, initialize/join a channel per IRC.md instead of raw polling.
 ```
 
 ### D. Cross-Remote-Host Workflows
