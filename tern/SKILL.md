@@ -1,6 +1,6 @@
 ---
 name: tern
-description: "Control Tern terminal sessions, tabs, blocks, remote hosts, and cross-block headed peer agents (IRC channels). Use when the user mentions Tern, manages terminal layouts/blocks/remote hosts, or coordinates independent headed agent sessions across blocks."
+description: "Control Tern terminal sessions, tabs, blocks, remote hosts, and cross-block headed peer agents. Use when the user mentions Tern, manages terminal layouts/blocks/remote hosts, or coordinates independent headed agent sessions across blocks."
 ---
 
 # Tern
@@ -104,8 +104,11 @@ tern focus "$TERN_PANE"
 Tern peer agents are full, independent **headed** sessions—heavier than an agent's built-in subagents. Use built-in subagents for ordinary single-session delegation; reach for Tern peer blocks when you need deep workspace/worktree or cross-repo isolation, human visibility and direct interaction with the peer, or ad-hoc coordination between already-running blocks.
 
 - **Default agent**: Unless specified, launch the same agent CLI running in `"$TERN_PANE"` (`tern process "$TERN_PANE" --json` → `.foreground.name`), or a native ACP block (`tern acp <agent> [--model M] [--mode MODE] [--prompt TEXT] [--resume ID|--fork ID|--continue] [--add-dir DIR]`).
-- **Read-only inspection**: Check peer liveness with `tern inspect --json` (`.panes[] | {pane, title, working, quiet_ms, exited}`) and `tern capture "$B" --surfaces`—prefer read-only observation over sending status pings into a busy block.
-- **Cross-block collaboration (2+ headed blocks)**: Read [`IRC.md`](IRC.md) and use `scripts/irc.py` for channel `join`/`claim`/`say`/`inbox`/`part`, TTL file reservations, Dialog Guard, and 0-token deferred doorbells. Do not paste repeated follow-ups into a busy peer or close a peer's block when it leaves a channel.
+- **Coordination transport (prefer native `omp` peers first)**:
+  1. **Same-folder `omp` peers (`agent://peers`)**: When running in `omp` and collaborating with other `omp` instances in the same folder/project (including a peer launched in `--cwd "$PWD"`), use `omp`'s built-in `agent://peers` directly—read `agent://peers` to list peer PIDs (correlate a block via `tern process "$B" --json` → `.foreground.pid`), read `agent://<pid>` (or `agent://<pid>/<id>` for its subagent) for status/output, and write `agent://<pid>` (or `agent://all`) to message. Skip `IRC.md` and `scripts/irc.py` entirely.
+  2. **External IRC ([`IRC.md`](IRC.md)) — fallback only**: Read [`IRC.md`](IRC.md) and use `scripts/irc.py` (channel `join`/`claim`/`say`/`inbox`/`part`, TTL file reservations, Dialog Guard, 0-token deferred doorbells) only when `agent://peers` cannot reach the peer: non-`omp` or mixed CLIs, different folders/worktrees (`agent://peers` only discovers instances in the same folder), or remote hosts over SSH.
+- **Read-only inspection**: For same-folder `omp` peers, read `agent://<pid>` directly. Otherwise inspect liveness with `tern inspect --json` (`.panes[] | {pane, title, working, quiet_ms, exited}`) and `tern capture "$B" --surfaces`—prefer read-only observation over sending status pings into a busy block.
+- **Block hygiene**: Avoid pasting repeated follow-ups into a busy peer, and leave a peer's block open when collaboration ends.
 
 ```bash
 # Launch a headed peer block beside self (without stealing focus)
@@ -114,7 +117,8 @@ B=$(tern split "$TERN_PANE" right --cwd "$PWD" --json | jq -r '.block')
 tern wait "$B" --until prompt --timeout 10
 tern run "$B" "$SELF_AGENT"
 tern wait "$B" --until idle=1500 --timeout 30
-# For ongoing collaboration, initialize/join a channel per IRC.md instead of raw polling.
+# Same-folder omp peers: read `agent://peers` and message `agent://<pid>` directly.
+# Non-omp, cross-folder/worktree, or cross-host peers: read IRC.md for channel coordination.
 ```
 
 ### D. Cross-Remote-Host Workflows

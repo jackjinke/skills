@@ -1,6 +1,6 @@
 # Tern Peer-Agent IRC Collaboration
 
-Use this protocol to coordinate **independent headed coding agents** across Tern blocks—e.g. separate worktrees or projects collaborating, tasks requiring human visibility/steering in each block, or already-running blocks that temporarily join forces. (Keep lightweight single-session delegation in your agent's built-in subagent tool instead of spinning up Tern blocks.) All participants stay live and interactive in their own Tern blocks.
+Use this protocol to coordinate **independent headed coding agents** across Tern blocks when native peer messaging is unavailable—e.g. non-`omp`/mixed CLIs, separate worktrees or projects, or cross-host blocks. (Use built-in subagents for lightweight single-session delegation, and use native `agent://peers` instead of this external IRC protocol when all peers are `omp` instances in the same folder/project.) All participants stay live and interactive in their own Tern blocks.
 
 Script path (resolve relative to this skill directory): `IRC="python3 <skill_dir>/scripts/irc.py"`.
 Channel root defaults to `/tmp/tern-irc/<channel>/` (override with `--root` or `TERN_IRC_ROOT`).
